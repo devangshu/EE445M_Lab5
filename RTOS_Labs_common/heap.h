@@ -1,87 +1,114 @@
-/**
- * @file      heap.h
- * @brief     heap memory manager
- * @details   Dynamic memory management on a heap
- * @version   V1.0
- * @author    Valvano (originally by Jacob Egner)
- * @copyright Copyright 2020 by Jonathan W. Valvano, valvano@mail.utexas.edu,
- * @warning   AS-IS
- * @note      For more information see  http://users.ece.utexas.edu/~valvano/
- * @date      Jan 12, 2020
- ******************************************************************************/
+// filename *************************heap.h ************************
+// Implements memory heap for dynamic memory allocation.
+// Follows standard malloc/calloc/realloc/free interface
+// for allocating/unallocating memory.
+
+// Jacob Egner 2008-07-31
+// modified 1/31/08 Jonathan Valvano for style
+// modified 12/16/11 Jonathan Valvano for 32-bit machine
+// modified August 10, 2014 for C99 syntax
+
+/* This example accompanies the book
+   "Embedded Systems: Real Time Operating Systems for ARM Cortex M Microcontrollers",
+   ISBN: 978-1466468863, Jonathan Valvano, copyright (c) 2015
+
+ Copyright 2015 by Jonathan W. Valvano, valvano@mail.utexas.edu
+    You may use, edit, run or distribute this file
+    as long as the above copyright notice remains
+
+ THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
+ OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
+ MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
+ VALVANO SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL,
+ OR CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
+ For more information about my classes, my research, and my books, see
+ http://users.ece.utexas.edu/~valvano/
+ */
 
 #ifndef HEAP_H
 #define HEAP_H
 
-#include <stdint.h>
+// feel free to change HEAP_SIZE_BYTES to however
+// big you want the heap to be
+#define HEAP_SIZE_BYTES (256)
+#define HEAP_SIZE_WORDS (HEAP_SIZE_BYTES / sizeof(int32_t))
+
+#define HEAP_OK 0
+#define HEAP_ERROR_CORRUPTED_HEAP 1
+#define HEAP_ERROR_POINTER_OUT_OF_RANGE 2
 
 // struct for holding statistics on the state of the heap
 typedef struct heap_stats {
-  uint32_t size;   // heap size (in bytes)
-  uint32_t used;   // number of bytes used/allocated
-  uint32_t free;   // number of bytes available to allocate
+  int32_t wordsAllocated;
+  int32_t wordsAvailable;
+  int32_t wordsOverhead;
+  int32_t blocksUsed;
+  int32_t blocksUnused;
 } heap_stats_t;
 
-
-/**
- * @details Initialize the Heap
- * @param  none
- * @return always 0 (success)
- * @brief  Initializes/resets the heap to a clean state where no memory
- *         is allocated.
- */
+//******** Heap_Init *************** 
+// Initialize the Heap
+// input: none
+// output: always HEAP_OK
+// notes: Initializes/resets the heap to a clean state where no memory
+//  is allocated.
 int32_t Heap_Init(void);
 
 
-/**
- * @details Allocate memory, data not initialized
- * @param  desiredBytes: desired number of bytes to allocate
- * @return void* pointing to the allocated memory or will return NULL
- *         if there isn't sufficient space to satisfy allocation request
- * @brief  Allocate memory
- */
+//******** Heap_Malloc *************** 
+// Allocate memory, data not initialized
+// input: 
+//   desiredBytes: desired number of bytes to allocate
+// output: void* pointing to the allocated memory or will return NULL
+//   if there isn't sufficient space to satisfy allocation request
 void* Heap_Malloc(int32_t desiredBytes);
 
 
-/**
- * @details Allocate memory, allocated memory is initialized to 0 (zeroed out)
- * @param  desiredBytes: desired number of bytes to allocate
- * @return void* pointing to the allocated memory block or will return NULL
- *         if there isn't sufficient space to satisfy allocation request
- * @brief Zero-allocate memory
- */
+//******** Heap_Calloc *************** 
+// Allocate memory, data are initialized to 0
+// input:
+//   desiredBytes: desired number of bytes to allocate
+// output: void* pointing to the allocated memory block or will return NULL
+//   if there isn't sufficient space to satisfy allocation request
+//notes: the allocated memory block will be zeroed out
 void* Heap_Calloc(int32_t desiredBytes);
 
 
-/**
- * @details Reallocate buffer to a new size. The given block may be 
- *          unallocated and its contents copied to a new block
- * @param  oldBlock: pointer to a block
- * @param  desiredBytes: a desired number of bytes for a new block
- * @return void* pointing to the new block or will return NULL
- *         if there is any reason the reallocation can't be completed
- * @brief  Grow/shrink memory
- */
+//******** Heap_Realloc *************** 
+// Reallocate buffer to a new size
+//input: 
+//  oldBlock: pointer to a block
+//  desiredBytes: a desired number of bytes for a new block
+//    where the contents of the old block will be copied to
+// output: void* pointing to the new block or will return NULL
+//   if there is any reason the reallocation can't be completed
+// notes: the given block will be unallocated after its contents
+//   are copied to the new block
 void* Heap_Realloc(void* oldBlock, int32_t desiredBytes);
 
 
-/**
- * @details Return a block to the heap
- * @param  pointer to memory to unallocate
- * @return 0 if everything is ok, non-zero in case of error (e.g. invalid pointer
- *         or trying to unallocate memory that has already been unallocated)
- * @brief  Free memory
- */
+//******** Heap_Free *************** 
+// return a block to the heap
+// input: pointer to memory to unallocate
+// output: HEAP_OK if everything is ok;
+//  HEAP_ERROR_POINTER_OUT_OF_RANGE if pointer points outside the heap;
+//  HEAP_ERROR_CORRUPTED_HEAP if heap has been corrupted or trying to
+//  unallocate memory that has already been unallocated;
 int32_t Heap_Free(void* pointer);
 
 
-/**
- * @details Return the current usage status of the heap
- * @param  reference to a heap_stats_t that returns the current usage of the heap
- * @return 0 in case of success, non-zeror in case of error (e.g. corrupted heap)
- * @brief  Get heap usage
- */
-int32_t Heap_Stats(heap_stats_t *stats);
+//******** Heap_Test *************** 
+// Test the heap
+// input: none
+// output: validity of the heap - either HEAP_OK or HEAP_ERROR_HEAP_CORRUPTED
+int32_t Heap_Test(void);
+
+
+//******** Heap_Stats *************** 
+// return the current status of the heap
+// input: none
+// output: a heap_stats_t that describes the current usage of the heap
+heap_stats_t Heap_Stats(void);
 
 
 #endif //#ifndef HEAP_H
