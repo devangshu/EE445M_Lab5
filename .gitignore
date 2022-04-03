@@ -1,0 +1,12 @@
+*.d
+*.o
+*.lst
+*.crf
+*.htm
+*.lnp
+*.map
+*.dep
+*.axf
+.DS_Store
+.vscode/
+*.orig
